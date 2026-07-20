@@ -1,0 +1,69 @@
+{
+  "name": "@askrjs/testing",
+  "version": "0.0.1",
+  "description": "Transport-neutral request injection and HTTP testing utilities for Askr applications.",
+  "keywords": [
+    "askr",
+    "http",
+    "request",
+    "testing"
+  ],
+  "homepage": "https://github.com/askrjs/askr-testing#readme",
+  "bugs": {
+    "url": "https://github.com/askrjs/askr-testing/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "askrjs (https://github.com/askrjs)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/askrjs/askr-testing.git"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "fmt": "vp fmt .",
+    "lint": "vp lint src tests vite.config.ts vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vp test run -c vitest.config.ts",
+    "test:types": "npm run build && tsc -p tests/types/tsconfig.json",
+    "test:publint": "publint",
+    "pack:check": "node tests/package-artifacts.js",
+    "pack:smoke": "node tests/package-consumers.js",
+    "check": "npm run fmt -- --check && npm run lint && npm run typecheck && npm test && npm run test:types && npm run test:publint && npm run pack:check && npm run pack:smoke",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check"
+  },
+  "dependencies": {
+    "tough-cookie": "^6.0.2"
+  },
+  "devDependencies": {
+    "@askrjs/server": "^0.0.3",
+    "publint": "^0.3.21",
+    "typescript": "^6.0.0",
+    "vite-plus": "^0.2.5",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
