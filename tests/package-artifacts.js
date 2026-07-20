@@ -2,9 +2,10 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join, normalize } from "node:path";
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCli = process.env.npm_execpath;
+if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
 const result = JSON.parse(
-  execFileSync(npm, ["pack", "--ignore-scripts", "--dry-run", "--json"], {
+  execFileSync(process.execPath, [npmCli, "pack", "--ignore-scripts", "--dry-run", "--json"], {
     encoding: "utf8",
   }),
 );
