@@ -3,21 +3,26 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const node = process.execPath;
+const npmCli = process.env.npm_execpath;
+if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
 const directory = mkdtempSync(join(tmpdir(), "askr-testing-consumer-"));
 const tarball = join(directory, "askrjs-testing-0.0.1.tgz");
 
-execFileSync(npm, ["pack", "--pack-destination", directory], { stdio: "ignore" });
+execFileSync(node, [npmCli, "pack", "--pack-destination", directory], { stdio: "ignore" });
 
 for (const name of ["javascript", "typescript"]) {
   const consumer = join(directory, name);
   mkdirSync(consumer);
-  execFileSync(npm, ["init", "-y"], { cwd: consumer, stdio: "ignore" });
-  execFileSync(npm, ["install", tarball, ...(name === "typescript" ? ["typescript@6"] : [])], {
-    cwd: consumer,
-    stdio: "ignore",
-  });
+  execFileSync(node, [npmCli, "init", "-y"], { cwd: consumer, stdio: "ignore" });
+  execFileSync(
+    node,
+    [npmCli, "install", tarball, ...(name === "typescript" ? ["typescript@6"] : [])],
+    {
+      cwd: consumer,
+      stdio: "ignore",
+    },
+  );
 }
 
 const javascript = join(directory, "javascript");
@@ -42,8 +47,9 @@ let jar: TestCookieJar; void response; void jar!;
 `,
 );
 execFileSync(
-  join(typescript, "node_modules", ".bin", process.platform === "win32" ? "tsc.cmd" : "tsc"),
+  node,
   [
+    join(typescript, "node_modules", "typescript", "bin", "tsc"),
     "--ignoreConfig",
     "--noEmit",
     "--strict",
