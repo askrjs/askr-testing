@@ -1,11 +1,10 @@
 # @askrjs/testing
 
-Node-focused request injection for fetch-shaped Askr applications. It calls an application's Web
-`Request`/`Response` boundary in process: no listening port, network connection, or test-runner
-integration is involved.
+Test Askr applications by passing Web `Request` objects directly to their `fetch` handler. No port
+is opened and no network request is made.
 
-Requires Node 22.12 or newer. The package tests transport-neutral applications from Node test
-runners; it does not claim browser or edge-runtime compatibility.
+The package works with any Node test runner and includes no custom matchers. It requires Node 22.12
+or newer; browser and edge runtimes are not supported.
 
 ## Install
 
@@ -30,9 +29,9 @@ expect(response.status).toBe(200);
 expect(await response.json()).toEqual({ status: "ok" });
 ```
 
-`inject` accepts a function, an object with `fetch(request)`, or an existing `Request`. It returns
-the exact native `Response` returned by the target and lets thrown errors propagate unchanged.
-Streaming response bodies and abort signals therefore retain their normal Web API behavior.
+`inject` accepts a handler function or an object with a `fetch(request)` method. The second argument
+may also be an existing `Request`. The target's native `Response` and thrown errors are returned
+unchanged, including streaming bodies and abort behavior.
 
 ## Construct requests and clients
 
@@ -80,10 +79,10 @@ const cookies = await jar.getCookies("https://example.test/account");
 await jar.clear();
 ```
 
-Use `cookies: true` for a new isolated jar or pass a jar to share an intentional session. Cookie
-domain, host, path, secure, expiry, public-suffix, and prefix rules are provided by tough-cookie.
-Every `Set-Cookie` header is captured, including redirect hops. Explicit request cookies override
-same-named jar cookies. SameSite navigation policy is not browser-emulated.
+Use `cookies: true` for a private jar, or pass a jar when two clients should share a session. The
+jar enforces domain, host, path, secure, expiry, public-suffix, and cookie-prefix rules. It captures
+every `Set-Cookie` header, including headers from redirect responses. A cookie supplied on the
+request overrides a jar cookie with the same name. SameSite navigation policy is not emulated.
 
 ## Redirects
 
@@ -93,5 +92,4 @@ reject them. Relative locations, standard method/body rewriting, cross-origin cr
 and cookies set during redirects are supported. The default limit is 10 hops and can be changed
 with `maxRedirects`.
 
-Following a redirect never calls the network: the new request is dispatched to the same in-process
-target.
+Followed requests are sent back to the same in-process target; redirects never reach the network.
