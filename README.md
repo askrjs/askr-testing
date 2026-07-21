@@ -1,5 +1,8 @@
 # @askrjs/testing
 
+[![CI](https://github.com/askrjs/askr-testing/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/askrjs/askr-testing/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/%40askrjs%2Ftesting.svg)](https://www.npmjs.com/package/@askrjs/testing)
+
 Test Askr applications by passing Web `Request` objects directly to their `fetch` handler. No port
 is opened and no network request is made.
 
