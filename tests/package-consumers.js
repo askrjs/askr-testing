@@ -10,7 +10,8 @@ const directory = mkdtempSync(join(tmpdir(), "askr-testing-consumer-"));
 const { name, version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
 );
-const tarball = join(directory, `${name.slice(1).replace("/", "-")}-${version}.tgz`);
+const tarballName = `${name.startsWith("@") ? name.slice(1).replace("/", "-") : name}-${version}.tgz`;
+const tarball = join(directory, tarballName);
 
 execFileSync(node, [npmCli, "pack", "--pack-destination", directory], { stdio: "ignore" });
 
