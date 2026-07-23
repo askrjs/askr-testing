@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,7 +7,11 @@ const node = process.execPath;
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
 const directory = mkdtempSync(join(tmpdir(), "askr-testing-consumer-"));
-const tarball = join(directory, "askrjs-testing-0.0.1.tgz");
+const { name, version } = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
+const tarballName = `${name.startsWith("@") ? name.slice(1).replace("/", "-") : name}-${version}.tgz`;
+const tarball = join(directory, tarballName);
 
 execFileSync(node, [npmCli, "pack", "--pack-destination", directory], { stdio: "ignore" });
 
