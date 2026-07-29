@@ -1,15 +1,6 @@
 import { CookieJar } from "tough-cookie";
 import type { TestCookie, TestCookieJar } from "./types";
 
-const implementations = new WeakMap<TestCookieJar, CookieJar>();
-
-function implementation(jar: TestCookieJar): CookieJar {
-  const value = implementations.get(jar);
-  if (!value)
-    throw new TypeError("cookies must be a TestCookieJar created by createTestCookieJar()");
-  return value;
-}
-
 export function createTestCookieJar(): TestCookieJar {
   const jar = new CookieJar(undefined, { prefixSecurity: "strict" });
   const api: TestCookieJar = {
@@ -39,12 +30,12 @@ export function createTestCookieJar(): TestCookieJar {
       await jar.removeAllCookies();
     },
   };
-  implementations.set(api, jar);
   return api;
 }
 
 export async function cookieHeader(jar: TestCookieJar, url: string): Promise<string> {
-  return implementation(jar).getCookieString(url);
+  const cookies = await jar.getCookies(url);
+  return cookies.map(({ name, value }) => `${name}=${value}`).join("; ");
 }
 
 export async function captureCookies(
@@ -57,7 +48,7 @@ export async function captureCookies(
     headers.getSetCookie?.() ?? (headers.get("set-cookie") ? [headers.get("set-cookie")!] : []);
   for (const value of values) {
     try {
-      await implementation(jar).setCookie(value, url);
+      await jar.setCookie(value, url);
     } catch {
       // Invalid response cookies are ignored, matching browser behavior.
     }

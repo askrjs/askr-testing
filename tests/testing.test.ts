@@ -198,6 +198,39 @@ describe("redirects", () => {
 });
 
 describe("cookie sessions", () => {
+  it("accepts any implementation of the public TestCookieJar interface", async () => {
+    const stored = new Map<string, string>();
+    const jar = {
+      async setCookie(cookie: string) {
+        const [pair] = cookie.split(";", 1);
+        const separator = pair.indexOf("=");
+        stored.set(pair.slice(0, separator), pair.slice(separator + 1));
+      },
+      async getCookies() {
+        return [...stored].map(([name, value]) => ({
+          name,
+          value,
+          httpOnly: false,
+          secure: false,
+        }));
+      },
+      async clear() {
+        stored.clear();
+      },
+    };
+    const client = createTestClient(
+      (request) =>
+        new Response(request.headers.get("cookie"), {
+          headers: { "set-cookie": "session=updated; Path=/" },
+        }),
+      { baseUrl: "https://example.test", cookies: jar },
+    );
+
+    await jar.setCookie("seed=yes", "https://example.test/");
+    expect(await (await client.get("/")).text()).toBe("seed=yes");
+    expect(stored.get("session")).toBe("updated");
+  });
+
   it("seeds, lists, clears, isolates, and overrides cookies", async () => {
     const jar = createTestCookieJar();
     await jar.setCookie("seed=yes; Path=/; Secure", "https://example.test/");
