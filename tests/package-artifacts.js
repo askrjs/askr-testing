@@ -4,11 +4,12 @@ import { dirname, join, normalize } from "node:path";
 
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
-const result = JSON.parse(
+const packed = JSON.parse(
   execFileSync(process.execPath, [npmCli, "pack", "--ignore-scripts", "--dry-run", "--json"], {
     encoding: "utf8",
   }),
 );
+const result = Array.isArray(packed) ? packed[0] : Object.values(packed)[0];
 
 const manifest = JSON.parse(readFileSync("package.json", "utf8"));
 const productionDependencies = Object.keys(manifest.dependencies ?? {}).sort();
@@ -16,10 +17,7 @@ if (JSON.stringify(productionDependencies) !== JSON.stringify(["tough-cookie"]))
   throw new Error(`Unexpected production dependencies: ${productionDependencies.join(", ")}`);
 }
 
-if (result.length !== 1)
-  throw new Error(`Expected one packed artifact, received ${result.length}.`);
-
-const packedFiles = new Set(result[0].files.map(({ path }) => normalize(path)));
+const packedFiles = new Set(result.files.map(({ path }) => normalize(path)));
 const expected = ["dist/index.d.ts", "dist/index.js", "LICENSE", "package.json", "README.md"];
 if (packedFiles.size !== expected.length) {
   throw new Error(
@@ -31,7 +29,7 @@ for (const file of expected) {
 }
 
 const sourceMappingPattern = /[#@]\s*sourceMappingURL=([^\s*]+)/gu;
-for (const file of result[0].files) {
+for (const file of result.files) {
   if (!/\.(?:d\.ts|js)$/u.test(file.path)) continue;
   const source = readFileSync(file.path, "utf8");
   for (const match of source.matchAll(sourceMappingPattern)) {
