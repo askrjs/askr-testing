@@ -6,6 +6,10 @@
 Test Askr applications by passing Web `Request` objects directly to their `fetch` handler. No port
 is opened and no network request is made.
 
+For browser/integration coverage of production widgets and responsive shells,
+see [browser harness guidance](docs/browser-harness.md). Fallback DOM tests do
+not replace real-browser focus and keyboard verification.
+
 The package works with any Node test runner and includes no custom matchers. It requires Node 22.12
 or newer; browser and edge runtimes are not supported.
 
