@@ -10,8 +10,8 @@ Use the application's normal entrypoint and mount it with the browser runner.
 Keep a stable accessible label or `data-testid` on the interactive control:
 
 ```ts
-await page.goto('/query');
-const editor = page.getByRole('textbox', { name: 'SQL editor' });
+await page.goto("/query");
+const editor = page.getByRole("textbox", { name: "SQL editor" });
 await expect(editor).toBeVisible();
 await editor.focus();
 await expect(editor).toBeFocused();
@@ -29,9 +29,9 @@ dispatched:
 
 ```ts
 await expect(editor).toBeFocused();
-await editor.press('ControlOrMeta+A');
-await editor.press('ArrowDown');
-await expect(page.getByRole('option', { name: 'orders' })).toBeVisible();
+await editor.press("ControlOrMeta+A");
+await editor.press("ArrowDown");
+await expect(page.getByRole("option", { name: "orders" })).toBeVisible();
 ```
 
 Use the platform-specific modifier names supported by Playwright and cover
@@ -44,7 +44,7 @@ assert that the editor remains reachable after the schema browser is toggled:
 
 ```ts
 await page.setViewportSize({ width: 393, height: 852 });
-await page.getByRole('button', { name: 'Schema browser' }).click();
+await page.getByRole("button", { name: "Schema browser" }).click();
 await expect(editor).toBeVisible();
 await editor.focus();
 await expect(editor).toBeFocused();
