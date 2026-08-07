@@ -20,7 +20,7 @@ const echo: RequestTarget = {
 };
 
 describe("native injection", () => {
-  it("exercises real Askr routes and returns the exact Response", async () => {
+  it("should exercise real Askr routes and returns the exact Response", async () => {
     const app = createServerApp({
       routes: [
         {
@@ -38,7 +38,7 @@ describe("native injection", () => {
     expect(await inject(() => native, new Request("https://example.test"))).toBe(native);
   });
 
-  it("supports object and function targets and validates their result", async () => {
+  it("should support object and function targets and validates their result", async () => {
     expect(await (await inject(echo, "/")).json()).toMatchObject({ url: "https://askr.test/" });
     await expect(inject((() => "no") as never, "/")).rejects.toThrow("must return a Response");
     const failure = new Error("boom");
@@ -49,7 +49,7 @@ describe("native injection", () => {
     ).rejects.toBe(failure);
   });
 
-  it("preserves aborts and streaming Web API bodies", async () => {
+  it("should preserve aborts and streaming Web API bodies", async () => {
     const controller = new AbortController();
     controller.abort(new Error("cancelled"));
     await expect(
@@ -79,7 +79,7 @@ describe("native injection", () => {
 });
 
 describe("request construction and clients", () => {
-  it("builds URLs, repeated query values, and every body mode", async () => {
+  it("should build URLs, repeated query values, and every body mode", async () => {
     const jsonRequest = createTestRequest("items?first=1", {
       method: "POST",
       query: { tag: ["a", "b"] },
@@ -104,7 +104,7 @@ describe("request construction and clients", () => {
     ).toBe("raw");
   });
 
-  it("rejects conflicting, undefined JSON, and GET/HEAD bodies at runtime", () => {
+  it("should reject conflicting, undefined JSON, and GET/HEAD bodies at runtime", () => {
     expect(() => createTestRequest("/", { method: "POST", json: {}, body: "x" } as never)).toThrow(
       "conflict",
     );
@@ -119,7 +119,7 @@ describe("request construction and clients", () => {
     );
   });
 
-  it("merges headers and exposes all method helpers", async () => {
+  it("should merge headers and exposes all method helpers", async () => {
     const client = createTestClient(echo, {
       baseUrl: "https://api.test/root/",
       headers: { "x-shared": "client", "x-client": "yes" },
@@ -161,7 +161,7 @@ describe("redirects", () => {
     return new Response("done");
   };
 
-  it("is manual by default and follows with standard rewriting", async () => {
+  it("should be manual by default and follows with standard rewriting", async () => {
     expect((await inject(redirects, "/start", { method: "POST", body: "value" })).status).toBe(302);
     seen.length = 0;
     expect(
@@ -178,7 +178,7 @@ describe("redirects", () => {
     expect(seen.at(-1)).toMatchObject({ method: "POST", body: "value" });
   });
 
-  it("handles redirect errors, missing locations, limits, and credential stripping", async () => {
+  it("should handle redirect errors, missing locations, limits, and credential stripping", async () => {
     await expect(inject(redirects, "/start", { redirect: "error" })).rejects.toThrow(
       "Redirect encountered",
     );
@@ -198,7 +198,7 @@ describe("redirects", () => {
 });
 
 describe("cookie sessions", () => {
-  it("accepts any implementation of the public TestCookieJar interface", async () => {
+  it("should accept any implementation of the public TestCookieJar interface", async () => {
     const stored = new Map<string, string>();
     const jar = {
       async setCookie(cookie: string) {
@@ -231,7 +231,7 @@ describe("cookie sessions", () => {
     expect(stored.get("session")).toBe("updated");
   });
 
-  it("seeds, lists, clears, isolates, and overrides cookies", async () => {
+  it("should seed, list, clear, isolate, and override cookies", async () => {
     const jar = createTestCookieJar();
     await jar.setCookie("seed=yes; Path=/; Secure", "https://example.test/");
     expect(await jar.getCookies("https://example.test/")).toMatchObject([
@@ -250,7 +250,7 @@ describe("cookie sessions", () => {
     );
   });
 
-  it("captures multiple cookies and redirect cookies with standards rules", async () => {
+  it("should capture multiple cookies and redirect cookies with standards rules", async () => {
     const client = createTestClient(
       (request) => {
         const path = new URL(request.url).pathname;
@@ -271,7 +271,7 @@ describe("cookie sessions", () => {
     expect(await client.cookies?.getCookies("https://example.test/account")).toHaveLength(2);
   });
 
-  it("honors domain, secure, expiry, prefixes, public suffixes, and deletion", async () => {
+  it("should honor domain, secure, expiry, prefixes, public suffixes, and deletion", async () => {
     const jar = createTestCookieJar();
     await jar.setCookie("root=yes; Domain=example.test; Path=/", "https://example.test/");
     await jar.setCookie("secure=yes; Secure; Path=/", "https://example.test/");
