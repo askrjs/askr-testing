@@ -20,7 +20,7 @@ const echo: RequestTarget = {
 };
 
 describe("native injection", () => {
-  it("should exercise real Askr routes and returns the exact Response", async () => {
+  it("should exercise real Askr routes and return the exact Response", async () => {
     const app = createServerApp({
       routes: [
         {
@@ -38,7 +38,7 @@ describe("native injection", () => {
     expect(await inject(() => native, new Request("https://example.test"))).toBe(native);
   });
 
-  it("should support object and function targets and validates their result", async () => {
+  it("should support object and function targets and validate their result", async () => {
     expect(await (await inject(echo, "/")).json()).toMatchObject({ url: "https://askr.test/" });
     await expect(inject((() => "no") as never, "/")).rejects.toThrow("must return a Response");
     const failure = new Error("boom");
@@ -119,7 +119,7 @@ describe("request construction and clients", () => {
     );
   });
 
-  it("should merge headers and exposes all method helpers", async () => {
+  it("should merge headers and expose all method helpers", async () => {
     const client = createTestClient(echo, {
       baseUrl: "https://api.test/root/",
       headers: { "x-shared": "client", "x-client": "yes" },
@@ -161,7 +161,7 @@ describe("redirects", () => {
     return new Response("done");
   };
 
-  it("should be manual by default and follows with standard rewriting", async () => {
+  it("should be manual by default and follow with standard rewriting", async () => {
     expect((await inject(redirects, "/start", { method: "POST", body: "value" })).status).toBe(302);
     seen.length = 0;
     expect(
