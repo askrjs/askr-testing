@@ -21,6 +21,20 @@ function bodyModes(options: InjectOptions): string[] {
   );
 }
 
+/**
+ * Build a `Request` for testing from a path or URL and a set of options.
+ *
+ * Resolves `input` against `options.baseUrl` (defaulting to `https://askr.test/`),
+ * appends any `query` parameters, and serializes at most one of `body`, `json`,
+ * or `form` into the request body, setting an appropriate `content-type` header
+ * when one isn't already present. Throws a `TypeError` if more than one body
+ * mode is supplied, if `json` is `undefined`, or if a `GET`/`HEAD` request is
+ * given a body.
+ *
+ * @param input - The request path or URL.
+ * @param options - Request options such as method, headers, query, and body.
+ * @returns A `Request` ready to be dispatched to a test target.
+ */
 export function createTestRequest(input: string | URL, options: InjectOptions = {}): Request {
   const modes = bodyModes(options);
   if (modes.length > 1) throw new TypeError(`Request body modes conflict: ${modes.join(", ")}`);
