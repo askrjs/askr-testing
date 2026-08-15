@@ -9,6 +9,7 @@ import type {
   TestCookieJar,
 } from "./types";
 
+/** A reusable HTTP client that injects requests into a target and follows redirects. */
 export interface TestClient {
   readonly cookies?: TestCookieJar;
   request(path: string | URL, options?: InjectOptions): Promise<Response>;
@@ -86,6 +87,20 @@ async function run(
   }
 }
 
+/**
+ * Create a {@link TestClient} bound to a target for repeated request injection.
+ *
+ * The returned client applies shared defaults (base URL, headers, cookie jar,
+ * redirect behavior) to every request made through it, and follows redirects
+ * automatically unless `redirect` is overridden.
+ *
+ * @param target - The handler or {@link RequestTarget} to inject requests into.
+ * @param options - Default options applied to every request made by this client.
+ * @returns A {@link TestClient} with `request`, `get`, `post`, and other HTTP-method helpers.
+ * @example
+ * const client = createTestClient(app, { baseUrl: "https://example.com", cookies: true });
+ * const response = await client.get("/users");
+ */
 export function createTestClient(target: Injectable, options: TestClientOptions = {}): TestClient {
   const jar = options.cookies === true ? createTestCookieJar() : options.cookies;
   const request = (path: string | URL, requestOptions: InjectOptions = {}) => {
@@ -116,11 +131,31 @@ export function createTestClient(target: Injectable, options: TestClientOptions 
   } as TestClient;
 }
 
+/**
+ * Inject a single request into a target and return the resulting response,
+ * following redirects up to `maxRedirects` hops.
+ *
+ * @param target - The handler or {@link RequestTarget} to inject the request into.
+ * @param request - An existing `Request` to dispatch as-is.
+ * @param options - Only `maxRedirects` is honored when a `Request` is passed directly.
+ * @returns The final `Response` after any redirects have been followed.
+ */
 export function inject(
   target: Injectable,
   request: Request,
   options?: Pick<InjectOptions, "maxRedirects">,
 ): Promise<Response>;
+/**
+ * Inject a request built from a path/URL and options into a target and return
+ * the resulting response, following redirects up to `maxRedirects` hops.
+ *
+ * @param target - The handler or {@link RequestTarget} to inject the request into.
+ * @param input - The request path or URL, resolved against `options.baseUrl`.
+ * @param options - Request options such as method, headers, query, and body.
+ * @returns The final `Response` after any redirects have been followed.
+ * @example
+ * const response = await inject(app, "/users", { method: "GET" });
+ */
 export function inject(
   target: Injectable,
   input: string | URL,

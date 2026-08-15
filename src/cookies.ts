@@ -1,6 +1,13 @@
 import { CookieJar } from "tough-cookie";
 import type { TestCookie, TestCookieJar } from "./types";
 
+/**
+ * Create an in-memory {@link TestCookieJar} backed by `tough-cookie`, suitable
+ * for use as the `cookies` option of a {@link TestClient}.
+ *
+ * @returns A cookie jar that persists cookies across injected requests and
+ *   enforces standard cookie-prefix security.
+ */
 export function createTestCookieJar(): TestCookieJar {
   const jar = new CookieJar(undefined, { prefixSecurity: "strict" });
   const api: TestCookieJar = {
