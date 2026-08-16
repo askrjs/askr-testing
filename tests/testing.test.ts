@@ -211,6 +211,24 @@ describe("redirects", () => {
     expect(await response.text()).toBe("done");
   });
 
+  it("should not wait for discarded-body cancellation to settle", async () => {
+    const response = await inject(
+      (incoming) =>
+        new URL(incoming.url).pathname === "/start"
+          ? new Response(
+              new ReadableStream({
+                cancel: () => new Promise(() => undefined),
+              }),
+              { status: 302, headers: { location: "/end" } },
+            )
+          : new Response("done"),
+      "/start",
+      { redirect: "follow" },
+    );
+
+    expect(await response.text()).toBe("done");
+  });
+
   it("should be manual by default and follow with standard rewriting", async () => {
     expect((await inject(redirects, "/start", { method: "POST", body: "value" })).status).toBe(302);
     seen.length = 0;
