@@ -36,6 +36,14 @@ function mergeCookieHeader(headers: Headers, jarValue: string): void {
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 const sensitiveHeaders = ["authorization", "cookie", "proxy-authorization"];
 
+async function discardResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // A discarded body must not replace the redirect result with a cleanup error.
+  }
+}
+
 async function run(
   target: Injectable,
   initial: Request,
@@ -51,12 +59,18 @@ async function run(
     const response = await dispatch(target, dispatched);
     if (jar) await captureCookies(jar, response, dispatched.url);
     if (!redirectStatuses.has(response.status) || request.redirect === "manual") return response;
-    if (request.redirect === "error")
+    if (request.redirect === "error") {
+      await discardResponseBody(response);
       throw new TypeError("Redirect encountered with redirect mode 'error'");
+    }
     const location = response.headers.get("location");
     if (!location) return response;
-    if (hops++ >= maxRedirects)
+    if (hops++ >= maxRedirects) {
+      await discardResponseBody(response);
       throw new TypeError(`Maximum redirect count of ${maxRedirects} exceeded`);
+    }
+
+    await discardResponseBody(response);
 
     const nextUrl = new URL(location, request.url);
     const headers = new Headers(request.headers);

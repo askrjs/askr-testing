@@ -161,6 +161,56 @@ describe("redirects", () => {
     return new Response("done");
   };
 
+  it.each([
+    { redirect: "follow", maxRedirects: 10, rejects: false },
+    { redirect: "error", maxRedirects: 10, rejects: true },
+    { redirect: "follow", maxRedirects: 0, rejects: true },
+  ] as const)(
+    "should cancel discarded redirect bodies for $redirect with limit $maxRedirects",
+    async ({ redirect, maxRedirects, rejects }) => {
+      let cancelled = 0;
+      const request = inject(
+        (incoming) =>
+          new URL(incoming.url).pathname === "/start"
+            ? new Response(
+                new ReadableStream({
+                  cancel() {
+                    cancelled += 1;
+                  },
+                }),
+                { status: 302, headers: { location: "/end" } },
+              )
+            : new Response("done"),
+        "/start",
+        { redirect, maxRedirects },
+      );
+
+      if (rejects) await expect(request).rejects.toBeInstanceOf(TypeError);
+      else expect(await (await request).text()).toBe("done");
+      expect(cancelled).toBe(1);
+    },
+  );
+
+  it("should preserve redirect traversal when discarded-body cancellation fails", async () => {
+    const response = await inject(
+      (incoming) =>
+        new URL(incoming.url).pathname === "/start"
+          ? new Response(
+              new ReadableStream({
+                cancel() {
+                  throw new Error("cleanup failed");
+                },
+              }),
+              { status: 302, headers: { location: "/end" } },
+            )
+          : new Response("done"),
+      "/start",
+      { redirect: "follow" },
+    );
+
+    expect(await response.text()).toBe("done");
+  });
+
   it("should be manual by default and follow with standard rewriting", async () => {
     expect((await inject(redirects, "/start", { method: "POST", body: "value" })).status).toBe(302);
     seen.length = 0;
