@@ -1,6 +1,6 @@
 {
   "name": "@askrjs/testing",
-  "version": "0.0.7",
+  "version": "0.2.0",
   "description": "Transport-neutral request injection and HTTP testing utilities for Askr applications.",
   "keywords": [
     "askr",
@@ -59,7 +59,7 @@
     "tough-cookie": "^6.0.2"
   },
   "devDependencies": {
-    "@askrjs/server": "^0.0.12",
+    "@askrjs/server": ">=0.2.0 <0.3.0",
     "@vitest/coverage-v8": "^4.1.10",
     "publint": "^0.3.23",
     "typescript": "^7.0.2",
