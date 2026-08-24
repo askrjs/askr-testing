@@ -76,6 +76,93 @@ describe("native injection", () => {
     );
     expect(await response.text()).toBe("stream");
   });
+
+  it("should reuse an unconsumed caller Request without consuming its body", async () => {
+    const request = new Request("https://example.test/body", {
+      method: "POST",
+      body: "reusable",
+    });
+    const target = async (incoming: Request) => new Response(await incoming.text());
+
+    expect(await (await inject(target, request)).text()).toBe("reusable");
+    expect(await (await inject(target, request)).text()).toBe("reusable");
+    expect(request.bodyUsed).toBe(false);
+  });
+
+  it("should reuse a Request across targets and body-preserving redirect chains", async () => {
+    const request = new Request("https://example.test/start", {
+      method: "POST",
+      body: "redirected",
+      redirect: "follow",
+    });
+    const redirected = async (incoming: Request) =>
+      new URL(incoming.url).pathname === "/start"
+        ? new Response(null, { status: 307, headers: { location: "/end" } })
+        : new Response(await incoming.text());
+
+    expect(await (await inject(redirected, request)).text()).toBe("redirected");
+    expect(await (await inject(redirected, request)).text()).toBe("redirected");
+    expect(
+      await (await inject(async (incoming) => new Response(await incoming.text()), request)).text(),
+    ).toBe("redirected");
+    expect(request.bodyUsed).toBe(false);
+  });
+
+  it("should explain that an already-consumed Request must be rebuilt", async () => {
+    const request = new Request("https://example.test/body", {
+      method: "POST",
+      body: "consumed",
+    });
+    await request.text();
+
+    expect(() => inject(echo, request)).toThrow(
+      "cannot inject a Request whose body has already been consumed; construct a new Request",
+    );
+  });
+
+  it("should reject when an injected signal aborts a never-settling handler", async () => {
+    const controller = new AbortController();
+    const reason = new Error("timed out");
+    const pending = inject(() => new Promise<Response>(() => undefined), "/slow", {
+      signal: controller.signal,
+    });
+
+    controller.abort(reason);
+
+    await expect(pending).rejects.toBe(reason);
+  });
+
+  it("should keep overlapping results attributed to their originating request", async () => {
+    const releases = new Map<string, () => void>();
+    const target = async (request: Request) => {
+      const id = new URL(request.url).searchParams.get("id")!;
+      await new Promise<void>((resolve) => releases.set(id, resolve));
+      return new Response(id);
+    };
+    const pending = Array.from({ length: 12 }, (_, id) =>
+      inject(target, `/?id=${id}`).then((response) => response.text()),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    for (let id = 11; id >= 0; id -= 1) releases.get(String(id))!();
+
+    await expect(Promise.all(pending)).resolves.toEqual(
+      Array.from({ length: 12 }, (_, id) => String(id)),
+    );
+  });
+
+  it("should preserve synchronous and asynchronous target failures by identity", async () => {
+    const synchronous = new Error("synchronous");
+    const asynchronous = new Error("asynchronous");
+
+    await expect(
+      inject(() => {
+        throw synchronous;
+      }, "/sync"),
+    ).rejects.toBe(synchronous);
+    await expect(inject(() => Promise.reject(asynchronous), "/async")).rejects.toBe(asynchronous);
+  });
 });
 
 describe("request construction and clients", () => {
@@ -89,11 +176,25 @@ describe("request construction and clients", () => {
     expect(jsonRequest.headers.get("content-type")).toBe("application/json");
     expect(await jsonRequest.text()).toBe('{"ok":true}');
     expect(
+      createTestRequest("/json", {
+        method: "POST",
+        json: {},
+        headers: { "content-type": "application/problem+json" },
+      }).headers.get("content-type"),
+    ).toBe("application/problem+json");
+    expect(
       await createTestRequest("/form", {
         method: "POST",
         form: { one: 1, tag: ["a", "b"] },
       }).text(),
     ).toBe("one=1&tag=a&tag=b");
+    expect(
+      createTestRequest("/form", {
+        method: "POST",
+        form: { one: 1 },
+        headers: { "content-type": "custom/form" },
+      }).headers.get("content-type"),
+    ).toBe("custom/form");
     const data = new FormData();
     data.set("file", new Blob(["x"]), "x.txt");
     expect(
@@ -116,6 +217,15 @@ describe("request construction and clients", () => {
     );
     expect(() => createTestRequest("/", { method: "HEAD", json: {} } as never)).toThrow(
       "cannot have a body",
+    );
+  });
+
+  it("should identify malformed URL and method construction as testing errors", () => {
+    expect(() => createTestRequest("http://[invalid")).toThrow(
+      "@askrjs/testing could not construct the request URL",
+    );
+    expect(() => createTestRequest("/", { method: "invalid method" } as never)).toThrow(
+      "@askrjs/testing could not construct the request",
     );
   });
 
@@ -262,6 +372,43 @@ describe("redirects", () => {
       headers: { authorization: "secret", cookie: "private=yes" },
     });
     expect(seen.at(-1)?.authorization).toBeNull();
+  });
+
+  it.each([0, 1, 8])("should follow and dispose a chain containing %i redirects", async (hops) => {
+    let cancellations = 0;
+    const response = await inject(
+      (request) => {
+        const step = Number(new URL(request.url).searchParams.get("step") ?? "0");
+        if (step >= hops) return new Response(`done:${step}`);
+        return new Response(
+          new ReadableStream({
+            cancel() {
+              cancellations += 1;
+            },
+          }),
+          { status: 302, headers: { location: `/?step=${step + 1}` } },
+        );
+      },
+      "/?step=0",
+      { redirect: "follow", maxRedirects: Math.max(hops, 1) },
+    );
+
+    expect(await response.text()).toBe(`done:${hops}`);
+    expect(cancellations).toBe(hops);
+  });
+
+  it("should expose native body-consumption semantics inside a handler", async () => {
+    await expect(
+      inject(
+        async (request) => {
+          await request.text();
+          await request.text();
+          return new Response();
+        },
+        "/body",
+        { method: "POST", body: "once" },
+      ),
+    ).rejects.toBeInstanceOf(TypeError);
   });
 });
 

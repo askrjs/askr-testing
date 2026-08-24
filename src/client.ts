@@ -178,6 +178,11 @@ export function inject(
   input: Request | string | URL,
   options: InjectOptions = {},
 ): Promise<Response> {
+  if (input instanceof Request && input.bodyUsed) {
+    throw new TypeError(
+      "@askrjs/testing cannot inject a Request whose body has already been consumed; construct a new Request before calling inject().",
+    );
+  }
   const request =
     input instanceof Request
       ? input
