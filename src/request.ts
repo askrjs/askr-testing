@@ -46,7 +46,15 @@ export function createTestRequest(input: string | URL, options: InjectOptions = 
     throw new TypeError(`${method} requests cannot have a body`);
   }
 
-  const url = new URL(input, options.baseUrl ?? DEFAULT_BASE_URL);
+  let url: URL;
+  try {
+    url = new URL(input, options.baseUrl ?? DEFAULT_BASE_URL);
+  } catch (error) {
+    throw new TypeError(
+      `@askrjs/testing could not construct the request URL: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
+  }
   if (options.query) append(url.searchParams, options.query);
   const headers = new Headers(options.headers);
   let body: BodyInit | null | undefined;
@@ -70,11 +78,36 @@ export function createTestRequest(input: string | URL, options: InjectOptions = 
     maxRedirects: _max,
     ...init
   } = options;
-  return new Request(url, { ...init, method, headers, body });
+  try {
+    return new Request(url, { ...init, method, headers, body });
+  } catch (error) {
+    throw new TypeError(
+      `@askrjs/testing could not construct the request: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
+    );
+  }
 }
 
 export async function dispatch(target: Injectable, request: Request): Promise<Response> {
-  const response = await (typeof target === "function" ? target(request) : target.fetch(request));
+  request.signal.throwIfAborted();
+  const operation = Promise.resolve().then(() => {
+    request.signal.throwIfAborted();
+    return typeof target === "function" ? target(request) : target.fetch(request);
+  });
+  const response = await new Promise<Response>((resolve, reject) => {
+    const abort = () => reject(request.signal.reason);
+    request.signal.addEventListener("abort", abort, { once: true });
+    operation.then(
+      (value) => {
+        request.signal.removeEventListener("abort", abort);
+        resolve(value);
+      },
+      (error: unknown) => {
+        request.signal.removeEventListener("abort", abort);
+        reject(error);
+      },
+    );
+  });
   if (!(response instanceof Response))
     throw new TypeError("The test target must return a Response");
   return response;

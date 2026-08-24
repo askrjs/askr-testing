@@ -100,3 +100,17 @@ and cookies set during redirects are supported. The default limit is 10 hops and
 with `maxRedirects`.
 
 Followed requests are sent back to the same in-process target; redirects never reach the network.
+
+## Injection boundary
+
+`inject` uses the same Web `Request`, `Response`, `Headers`, body-stream, and abort-signal types that
+the Node adapter presents to an Askr application. It preserves native header normalization, repeated
+`Set-Cookie` values, streaming response bodies, thrown errors, and abort reasons. An unconsumed
+caller-owned `Request` may be injected repeatedly because each dispatch receives a clone. If a caller
+has already consumed that original body, construct a new `Request` before injecting it.
+
+This is intentionally not a socket emulator. Unlike `@askrjs/node`, injection does not exercise HTTP
+parsing, the adapter-authenticated client-address header, socket backpressure, server timeout options,
+connection errors, or network timing. Response bodies remain streams but are consumed directly by the
+test rather than written through a Node socket. Use an actual `@askrjs/node` listener when those
+transport properties are part of the behavior under test.
