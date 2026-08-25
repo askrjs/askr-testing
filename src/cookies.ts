@@ -16,22 +16,18 @@ export function createTestCookieJar(): TestCookieJar {
     },
     async getCookies(url) {
       const cookies = await jar.getCookies(String(url));
-      return cookies.map(
-        (cookie): TestCookie => ({
-          name: cookie.key,
-          value: cookie.value,
-          ...(cookie.domain ? { domain: cookie.domain } : {}),
-          ...(cookie.path ? { path: cookie.path } : {}),
-          ...(cookie.expires ? { expires: cookie.expires } : {}),
-          httpOnly: cookie.httpOnly,
-          secure: cookie.secure,
-          ...(cookie.sameSite === "strict" ||
-          cookie.sameSite === "lax" ||
-          cookie.sameSite === "none"
-            ? { sameSite: cookie.sameSite }
-            : {}),
-        }),
-      );
+      return cookies.map((cookie): TestCookie => ({
+        name: cookie.key,
+        value: cookie.value,
+        ...(cookie.domain ? { domain: cookie.domain } : {}),
+        ...(cookie.path ? { path: cookie.path } : {}),
+        ...(cookie.expires ? { expires: cookie.expires } : {}),
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        ...(cookie.sameSite === "strict" || cookie.sameSite === "lax" || cookie.sameSite === "none"
+          ? { sameSite: cookie.sameSite }
+          : {}),
+      }));
     },
     async clear() {
       await jar.removeAllCookies();
