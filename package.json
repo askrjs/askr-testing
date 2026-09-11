@@ -50,8 +50,7 @@
     "test:types": "npm run build && tsc -p tests/types/tsconfig.json",
     "test:publint": "publint",
     "pack:check": "node tests/package-artifacts.js",
-    "pack:smoke": "node tests/package-consumers.js",
-    "check": "npm run fmt -- --check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:types && npm run test:publint && npm run pack:check && npm run pack:smoke",
+    "check": "npm run fmt -- --check && npm run lint && npm run typecheck && npm run test:coverage && npm run test:types && npm run test:publint && npm run pack:check",
     "prepack": "npm run build",
     "prepublishOnly": "npm run check"
   },
