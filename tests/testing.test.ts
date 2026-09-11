@@ -1,4 +1,4 @@
-import { createServerApp, json } from "@askrjs/server";
+import { createRouter, createServerApp, json } from "@askrjs/server";
 import { describe, expect, it } from "vitest";
 import {
   createTestClient,
@@ -21,15 +21,11 @@ const echo: RequestTarget = {
 
 describe("native injection", () => {
   it("should exercise real Askr routes and return the exact Response", async () => {
-    const app = createServerApp({
-      routes: [
-        {
-          method: "POST",
-          path: "/items/{id}",
-          handler: async ({ bind, params }) => json({ id: params.id, input: await bind() }),
-        },
-      ],
-    });
+    const router = createRouter();
+    router.post("/items/{id}", async ({ bind, params }) =>
+      json({ id: params.id, input: await bind() }),
+    );
+    const app = createServerApp({ router });
     expect(
       await (await inject(app, "/items/42", { method: "POST", json: { active: true } })).json(),
     ).toEqual({ id: "42", input: { id: "42", active: true } });
