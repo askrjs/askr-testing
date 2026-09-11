@@ -10,8 +10,8 @@ For browser/integration coverage of production widgets and responsive shells,
 see [browser harness guidance](docs/browser-harness.md). Fallback DOM tests do
 not replace real-browser focus and keyboard verification.
 
-The package works with any Node test runner and includes no custom matchers. It requires Node 22.12
-or newer; browser and edge runtimes are not supported.
+The package works with any Node test runner and includes no custom matchers. It requires Node 24.0
+or newer (see `engines` in package.json); browser and edge runtimes are not supported.
 
 ## Install
 
