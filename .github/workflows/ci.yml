@@ -33,7 +33,7 @@ jobs:
       - name: Run package gate
         run: npm run check
 
-  smoke:
+  cross-platform:
     name: Node LTS (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
