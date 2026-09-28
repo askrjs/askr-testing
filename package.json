@@ -1,6 +1,6 @@
 {
   "name": "@askrjs/testing",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Transport-neutral request injection and HTTP testing utilities for Askr applications.",
   "keywords": [
     "askr",
