@@ -1,59 +1,69 @@
 import {
   createTestClient,
   createTestCookieJar,
-  createTestRequest,
   inject,
-  type BodyRequestOptions,
   type Form,
-  type FormValue,
-  type GetHeadOptions,
   type Injectable,
   type InjectOptions,
   type Query,
-  type QueryValue,
-  type RequestHandler,
-  type RequestTarget,
   type TestClient,
   type TestClientOptions,
   type TestCookie,
   type TestCookieJar,
 } from "@askrjs/testing";
 
-const app: RequestTarget = { fetch: () => new Response() };
-const client = createTestClient(app, { cookies: createTestCookieJar() });
-const injected: Promise<Response> = inject(app, "/", { method: "POST", json: { value: true } });
-const requested: Promise<Response> = client.get("/", { query: { page: 1 } });
-createTestRequest("/", { method: "POST", body: "value" });
-void injected;
-void requested;
-
-const bodyOptions: BodyRequestOptions = { method: "POST", body: "value" };
-const getOptions: GetHeadOptions = { method: "GET", query: { page: 1 } };
-const formValue: FormValue = true;
-const form: Form = { enabled: formValue };
-const queryValue: QueryValue = 1;
-const query: Query = { page: queryValue };
-const handler: RequestHandler = () => new Response();
-const injectable: Injectable = handler;
-const typedClient: TestClient = client;
-const clientOptions: TestClientOptions = { cookies: true };
+const app: Injectable = { fetch: () => new Response() };
+const handler: Injectable = () => new Response();
+const jar: TestCookieJar = createTestCookieJar();
+const defaults: TestClientOptions = { cookies: jar, maxRedirects: 0 };
+const client: TestClient = createTestClient(app, defaults);
+const query: Query = { page: [1, 2], active: true };
+const form: Form = new URLSearchParams({ active: "true" });
+const options: InjectOptions = { method: "POST", form, query };
 const cookie: TestCookie = { name: "session", value: "value", httpOnly: true, secure: true };
-const cookieJar: TestCookieJar = createTestCookieJar();
-void bodyOptions;
-void getOptions;
-void form;
-void query;
-void injectable;
-void typedClient;
-void clientOptions;
-void cookie;
-void cookieJar;
+const injected: Promise<Response> = inject(handler, "/", options);
+const native: Promise<Response> = inject(app, new Request("https://askr.test/"));
+const requested: Promise<Response> = client.get("/", { query });
+const bodyOptions: Extract<InjectOptions, { method: string }> = { method: "POST", body: "value" };
+const getOptions: Parameters<TestClient["get"]>[1] = { query };
+void [injected, native, requested, cookie, bodyOptions, getOptions];
 
-// @ts-expect-error request bodies are mutually exclusive
+// @ts-expect-error Request body modes are mutually exclusive.
 const conflict: InjectOptions = { method: "POST", json: {}, form: { value: "no" } };
-// @ts-expect-error GET bodies are forbidden
+// @ts-expect-error GET bodies are forbidden.
 const getBody: InjectOptions = { method: "GET", body: "no" };
-// @ts-expect-error HEAD bodies are forbidden
+// @ts-expect-error HEAD bodies are forbidden.
 client.head("/", { json: {} });
-void conflict;
-void getBody;
+// @ts-expect-error A target must return a Response.
+const invalidTarget: Injectable = () => "not a Response";
+void [conflict, getBody, invalidTarget];
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { BodyRequestOptions as Removed_BodyRequestOptions } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { FormValue as Removed_FormValue } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { GetHeadOptions as Removed_GetHeadOptions } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { QueryValue as Removed_QueryValue } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { RequestHandler as Removed_RequestHandler } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { RequestTarget as Removed_RequestTarget } from "@askrjs/testing";
+
+// @ts-expect-error Removed 0.4 public name must remain private.
+import type { createTestRequest as Removed_createTestRequest } from "@askrjs/testing";
+
+export type RemovedNames =
+  | Removed_BodyRequestOptions
+  | Removed_FormValue
+  | Removed_GetHeadOptions
+  | Removed_QueryValue
+  | Removed_RequestHandler
+  | Removed_RequestTarget
+  | Removed_createTestRequest;

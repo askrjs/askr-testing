@@ -1,4 +1,6 @@
 import type { Form, InjectOptions, Injectable, Query, QueryValue } from "./types";
+import { withRequestSignal } from "./request-signal";
+import { discardResponseBody } from "./response-body";
 
 export const DEFAULT_BASE_URL = "https://askr.test/";
 
@@ -79,7 +81,13 @@ export function createTestRequest(input: string | URL, options: InjectOptions = 
     ...init
   } = options;
   try {
-    return new Request(url, { ...init, method, headers, body });
+    return new Request(url, {
+      ...init,
+      method,
+      headers,
+      body,
+      ...(body instanceof ReadableStream ? { duplex: "half" } : {}),
+    } as RequestInit);
   } catch (error) {
     throw new TypeError(
       `@askrjs/testing could not construct the request: ${error instanceof Error ? error.message : String(error)}`,
@@ -89,25 +97,13 @@ export function createTestRequest(input: string | URL, options: InjectOptions = 
 }
 
 export async function dispatch(target: Injectable, request: Request): Promise<Response> {
-  request.signal.throwIfAborted();
-  const operation = Promise.resolve().then(() => {
-    request.signal.throwIfAborted();
-    return typeof target === "function" ? target(request) : target.fetch(request);
-  });
-  const response = await new Promise<Response>((resolve, reject) => {
-    const abort = () => reject(request.signal.reason);
-    request.signal.addEventListener("abort", abort, { once: true });
-    operation.then(
-      (value) => {
-        request.signal.removeEventListener("abort", abort);
-        resolve(value);
-      },
-      (error: unknown) => {
-        request.signal.removeEventListener("abort", abort);
-        reject(error);
-      },
-    );
-  });
+  const response = await withRequestSignal(
+    request.signal,
+    () => (typeof target === "function" ? target(request) : target.fetch(request)),
+    (value) => {
+      if (value instanceof Response) discardResponseBody(value);
+    },
+  );
   if (!(response instanceof Response))
     throw new TypeError("The test target must return a Response");
   return response;

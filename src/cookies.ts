@@ -45,15 +45,18 @@ export async function captureCookies(
   jar: TestCookieJar,
   response: Response,
   url: string,
+  signal: AbortSignal,
 ): Promise<void> {
   const headers = response.headers as Headers & { getSetCookie?: () => string[] };
   const values =
     headers.getSetCookie?.() ?? (headers.get("set-cookie") ? [headers.get("set-cookie")!] : []);
   for (const value of values) {
+    signal.throwIfAborted();
     try {
       await jar.setCookie(value, url);
     } catch {
       // Invalid response cookies are ignored, matching browser behavior.
     }
+    signal.throwIfAborted();
   }
 }
