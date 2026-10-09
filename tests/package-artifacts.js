@@ -18,7 +18,17 @@ if (JSON.stringify(productionDependencies) !== JSON.stringify(["tough-cookie"]))
 }
 
 const packedFiles = new Set(result.files.map(({ path }) => normalize(path)));
-const expected = ["dist/index.d.ts", "dist/index.js", "LICENSE", "package.json", "README.md"];
+const expected = [
+  "dist/index.d.ts",
+  "dist/index.js",
+  "LICENSE",
+  "package.json",
+  "README.md",
+  "CHANGELOG.md",
+  "docs/browser-harness.md",
+  "docs/0.5.0-api.md",
+  "docs/0.5.0-hardening.md",
+];
 if (packedFiles.size !== expected.length) {
   throw new Error(
     `Expected exactly ${expected.length} packed files, received ${packedFiles.size}.`,

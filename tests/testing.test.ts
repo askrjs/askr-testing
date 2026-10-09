@@ -1,14 +1,9 @@
 import { createRouter, createServerApp, json } from "@askrjs/server";
 import { describe, expect, it } from "vitest";
-import {
-  createTestClient,
-  createTestCookieJar,
-  createTestRequest,
-  inject,
-  type RequestTarget,
-} from "../src/index";
+import { createTestClient, createTestCookieJar, inject, type Injectable } from "../src/index";
+import { createTestRequest } from "../src/request";
 
-const echo: RequestTarget = {
+const echo: Injectable = {
   async fetch(request) {
     return Response.json({
       method: request.method,

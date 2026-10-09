@@ -40,16 +40,10 @@ expect(await response.json()).toEqual({ status: "ok" });
 may also be an existing `Request`. The target's native `Response` and thrown errors are returned
 unchanged, including streaming bodies and abort behavior.
 
-## Construct requests and clients
+## Configure repeated requests
 
 ```ts
-import { createTestClient, createTestRequest } from "@askrjs/testing";
-
-const request = createTestRequest("/items", {
-  method: "POST",
-  query: { tag: ["desk", "hardware"] },
-  json: { name: "keyboard" },
-});
+import { createTestClient } from "@askrjs/testing";
 
 const client = createTestClient(app, {
   baseUrl: "https://example.test/api/",
@@ -97,7 +91,8 @@ Redirects are manual by default, keeping the first 3xx `Response` visible. Set `
 to follow 301, 302, 303, 307, and 308 responses inside the same target, or `redirect: "error"` to
 reject them. Relative locations, standard method/body rewriting, cross-origin credential stripping,
 and cookies set during redirects are supported. The default limit is 10 hops and can be changed
-with `maxRedirects`.
+with `maxRedirects`, which must be a non-negative safe integer. Invalid defaults or request overrides
+throw before the target runs; zero permits a non-redirect response and rejects the first followed redirect.
 
 Followed requests are sent back to the same in-process target; redirects never reach the network.
 
@@ -114,3 +109,33 @@ parsing, the adapter-authenticated client-address header, socket backpressure, s
 connection errors, or network timing. Response bodies remain streams but are consumed directly by the
 test rather than written through a Node socket. Use an actual `@askrjs/node` listener when those
 transport properties are part of the behavior under test.
+
+## Cancellation and shared state
+
+Aborting rejects a pending handler, cookie lookup, or cookie capture with the original abort reason.
+A response arriving after abort is discarded, as is a response held while cookie capture is aborted.
+Discarding a response calls its body's cancel method without awaiting completion. A failing or
+never-settling cancel hook cannot replace the abort or redirect outcome. After a response is returned,
+the caller owns its body.
+
+An application handler or custom cookie store may ignore the signal and continue its own work.
+Injection cannot undo a cookie write that has already started. It starts no later cookie writes after
+abort, but a started custom write may finish afterward. Await those operations before clearing shared
+state between tests. Shared jars apply completed response writes as they arrive, without transaction
+isolation; concurrent login tests needing independent sessions should use separate private clients.
+The built-in jar ignores rejected response cookies. A custom store's read or write rejection fails
+injection with that same error; custom stores should resolve normally when ignoring an invalid cookie.
+
+Request cloning preserves an unconsumed caller-owned request for repeated injection and body-preserving
+redirects. Cloned streams can buffer unread tee branches. Use bounded bodies in injection tests and a
+real Node listener for backpressure, unbounded uploads, or connection-disconnect behavior.
+
+## 0.5 migration and qualification
+
+The 0.5 candidate has three runtime exports: `inject`, `createTestClient`, and `createTestCookieJar`.
+Use `inject(target, path, options)` for query/JSON/form construction, or pass a native `Request` when you
+need to retain one. The separate `createTestRequest` constructor is private. Supporting option and
+handler types are consolidated; see the [complete API decisions and migration](docs/0.5.0-api.md).
+The [executed hardening matrix](docs/0.5.0-hardening.md) distinguishes local injection, browser tests,
+and real transport qualification. These documents describe preparation for 0.5; package versions stay
+at 0.4.x until the coordinated candidate is reviewed.
