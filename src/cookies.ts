@@ -1,6 +1,9 @@
 import { CookieJar } from "tough-cookie";
 import type { TestCookie, TestCookieJar } from "./types";
 
+/** Identifies policy rejection by our in-memory jar, distinct from custom store failure. */
+class RejectedCookie extends Error {}
+
 /**
  * Create an in-memory {@link TestCookieJar} backed by `tough-cookie`, suitable
  * for use as the `cookies` option of a {@link TestClient}.
@@ -12,7 +15,11 @@ export function createTestCookieJar(): TestCookieJar {
   const jar = new CookieJar(undefined, { prefixSecurity: "strict" });
   const api: TestCookieJar = {
     async setCookie(cookie, url) {
-      await jar.setCookie(cookie, String(url));
+      try {
+        await jar.setCookie(cookie, String(url));
+      } catch (error) {
+        throw new RejectedCookie(String(error), { cause: error });
+      }
     },
     async getCookies(url) {
       const cookies = await jar.getCookies(String(url));
@@ -54,8 +61,9 @@ export async function captureCookies(
     signal.throwIfAborted();
     try {
       await jar.setCookie(value, url);
-    } catch {
-      // Invalid response cookies are ignored, matching browser behavior.
+    } catch (error) {
+      if (!(error instanceof RejectedCookie)) throw error;
+      // Only a known in-memory cookie-policy rejection is ignorable.
     }
     signal.throwIfAborted();
   }

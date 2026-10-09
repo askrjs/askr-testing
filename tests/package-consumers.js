@@ -117,6 +117,13 @@ try {
     let calls = 0;
     assert.throws(() => inject(() => { calls++; return new Response(); }, '/', { maxRedirects: Infinity }), /maxRedirects/);
     assert.equal(calls, 0);
+    const reason = new Error('custom cookie store failed');
+    let cancelled = 0;
+    const failing = createTestClient(() => new Response(new ReadableStream({ cancel() { cancelled++; } }), {
+      headers: { 'set-cookie': 'session=active; Path=/' },
+    }), { cookies: { getCookies: async () => [], setCookie: async () => { throw reason; }, clear: async () => {} } });
+    await assert.rejects(failing.get('/'), error => error === reason);
+    assert.equal(cancelled, 1);
   `,
   );
   execFileSync(process.execPath, [join(directory, "runtime.mjs")], {
@@ -130,7 +137,13 @@ try {
       removedNames: contract.removed.length,
       privateSubpaths: contract.privateSubpaths.length,
       compilers: ["6.0.2", "7.0.2"],
-      runtime: ["redirect session", "jar clear", "stream body", "invalid redirect limit"],
+      runtime: [
+        "redirect session",
+        "jar clear",
+        "stream body",
+        "invalid redirect limit",
+        "custom store failure",
+      ],
     }),
   );
 } finally {

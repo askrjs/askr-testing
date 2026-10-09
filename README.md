@@ -123,6 +123,8 @@ Injection cannot undo a cookie write that has already started. It starts no late
 abort, but a started custom write may finish afterward. Await those operations before clearing shared
 state between tests. Shared jars apply completed response writes as they arrive, without transaction
 isolation; concurrent login tests needing independent sessions should use separate private clients.
+The built-in jar ignores rejected response cookies. A custom store's read or write rejection fails
+injection with that same error; custom stores should resolve normally when ignoring an invalid cookie.
 
 Request cloning preserves an unconsumed caller-owned request for repeated injection and body-preserving
 redirects. Cloned streams can buffer unread tee branches. Use bounded bodies in injection tests and a

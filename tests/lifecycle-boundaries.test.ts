@@ -12,6 +12,23 @@ function deferred<T>() {
 }
 
 describe("injection lifecycle boundaries", () => {
+  it.each(["inject", "client"])("honors a zero redirect limit through %s", async (entry) => {
+    let calls = 0;
+    const target = (request: Request) => {
+      calls++;
+      return new URL(request.url).pathname === "/ok"
+        ? new Response("ok")
+        : new Response(null, { status: 302, headers: { location: "/ok" } });
+    };
+    const request =
+      entry === "inject"
+        ? (path: string) => inject(target, path, { redirect: "follow", maxRedirects: 0 })
+        : createTestClient(target, { redirect: "follow", maxRedirects: 0 }).get;
+    expect(await (await request("/ok")).text()).toBe("ok");
+    await expect(request("/redirect")).rejects.toThrow("Maximum redirect count of 0 exceeded");
+    expect(calls).toBe(2);
+  });
+
   it.each(["inject", "client"])(
     "accepts a streaming request body through %s options",
     async (entry) => {
@@ -153,6 +170,89 @@ describe("injection lifecycle boundaries", () => {
 });
 
 describe("shared and asynchronous cookie jars", () => {
+  it("preserves a custom store write failure, discards its response and recovers", async () => {
+    const reason = new Error("cookie store unavailable");
+    let writes = 0,
+      cancelled = 0;
+    const jar: TestCookieJar = {
+      getCookies: async () => [],
+      clear: async () => {},
+      setCookie: async () => {
+        writes++;
+        throw reason;
+      },
+    };
+    const client = createTestClient(
+      (request) =>
+        new URL(request.url).pathname === "/failure"
+          ? new Response(
+              new ReadableStream({
+                cancel() {
+                  cancelled++;
+                },
+              }),
+              {
+                headers: [
+                  ["set-cookie", "first=one; Path=/"],
+                  ["set-cookie", "second=two; Path=/"],
+                ],
+              },
+            )
+          : new Response("recovered"),
+      { cookies: jar },
+    );
+    await expect(client.get("/failure")).rejects.toBe(reason);
+    expect({ writes, cancelled }).toEqual({ writes: 1, cancelled: 1 });
+    expect(await (await client.get("/next")).text()).toBe("recovered");
+  });
+
+  it("preserves a custom store lookup failure before dispatch and recovers", async () => {
+    const reason = new Error("cookie lookup unavailable");
+    let failed = true,
+      calls = 0;
+    const jar: TestCookieJar = {
+      getCookies: async () => {
+        if (failed) throw reason;
+        return [];
+      },
+      setCookie: async () => {},
+      clear: async () => {},
+    };
+    const client = createTestClient(
+      () => {
+        calls++;
+        return new Response("recovered");
+      },
+      { cookies: jar },
+    );
+    await expect(client.get("/")).rejects.toBe(reason);
+    expect(calls).toBe(0);
+    failed = false;
+    expect(await (await client.get("/")).text()).toBe("recovered");
+    expect(calls).toBe(1);
+  });
+
+  it.each(["broken", "bad=yes; Domain=com", "__Host-bad=yes; Secure; Domain=example.test; Path=/"])(
+    "ignores a built-in jar's rejected response cookie %s and captures the next",
+    async (invalid) => {
+      const client = createTestClient(
+        () =>
+          new Response("ok", {
+            headers: [
+              ["set-cookie", invalid],
+              ["set-cookie", "valid=yes; Path=/"],
+            ],
+          }),
+        { baseUrl: "https://example.test", cookies: true },
+      );
+      expect(await (await client.get("/")).text()).toBe("ok");
+      expect(await client.cookies!.getCookies("https://example.test/")).toMatchObject([
+        { name: "valid", value: "yes" },
+      ]);
+      expect(await client.cookies!.getCookies("https://example.test/")).toHaveLength(1);
+    },
+  );
+
   it("does not start a cookie lookup for an already aborted request", async () => {
     let lookups = 0,
       calls = 0;

@@ -7,6 +7,8 @@
 - Reduce the root API from 18 to 11 declaration names. Remove `createTestRequest`, `BodyRequestOptions`,
   `GetHeadOptions`, `RequestHandler`, `RequestTarget`, `FormValue` and `QueryValue`.
   See [each replacement](docs/0.5.0-api.md); no deprecated shim is retained.
+- Custom cookie-store write failures now reject injection with the original error. Stores that ignore
+  invalid cookies should resolve normally; built-in cookie-policy rejections are still ignored.
 
 ### Fixed
 
