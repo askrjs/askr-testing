@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-10
+
 ### Breaking
 
 - Reduce the root API from 18 to 11 declaration names. Remove `createTestRequest`, `BodyRequestOptions`,
@@ -24,5 +26,9 @@
 - Expand deterministic overlap, cookie ordering, abort/cleanup and stream-body coverage. Keep existing
   coverage thresholds and refresh compatible development dependencies.
 
-The package remains 0.4.1 during coordinated 0.5.0 preparation. Official publication awaits the final
-candidate graph and maintainer review.
+Prepare the contracted API and sibling dependency ranges for the coordinated 0.5.0 package set.
+
+### Development
+
+- First-party development workflows use Vite+; specialized compiler, runtime,
+  browser, and package checks remain part of validation.
