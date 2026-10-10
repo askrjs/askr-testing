@@ -22,11 +22,13 @@ npm install --save-dev @askrjs/testing
 ## Inject a request
 
 ```ts
-import { createServerApp, json } from "@askrjs/server";
+import { createServerApp } from "@askrjs/server";
+import { createRouter } from "@askrjs/server/router";
+import { json } from "@askrjs/server/http";
 import { inject } from "@askrjs/testing";
 
 const app = createServerApp({
-  routes: [{ path: "/health", handler: () => json({ status: "ok" }) }],
+  router: createRouter().get("/health", () => json({ status: "ok" })),
 });
 
 const response = await inject(app, "/health");
