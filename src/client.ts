@@ -1,5 +1,7 @@
 import { captureCookies, cookieHeader, createTestCookieJar } from "./cookies";
 import { createTestRequest, dispatch } from "./request";
+import { withRequestSignal } from "./request-signal";
+import { discardResponseBody } from "./response-body";
 import type {
   BodyRequestOptions,
   GetHeadOptions,
@@ -36,10 +38,11 @@ function mergeCookieHeader(headers: Headers, jarValue: string): void {
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 const sensitiveHeaders = ["authorization", "cookie", "proxy-authorization"];
 
-function discardResponseBody(response: Response): void {
-  void response.body?.cancel().catch(() => {
-    // A discarded body must not replace the redirect result with a cleanup error.
-  });
+function redirectLimit(value: number | undefined): number {
+  const limit = value === undefined ? 10 : value;
+  if (!Number.isSafeInteger(limit) || limit < 0)
+    throw new TypeError("maxRedirects must be a non-negative safe integer");
+  return limit;
 }
 
 async function run(
@@ -53,9 +56,23 @@ async function run(
   for (;;) {
     const preserved = request.body ? request.clone() : request;
     const dispatched = request.clone();
-    if (jar) mergeCookieHeader(dispatched.headers, await cookieHeader(jar, dispatched.url));
+    if (jar)
+      mergeCookieHeader(
+        dispatched.headers,
+        await withRequestSignal(dispatched.signal, () => cookieHeader(jar, dispatched.url)),
+      );
     const response = await dispatch(target, dispatched);
-    if (jar) await captureCookies(jar, response, dispatched.url);
+    try {
+      dispatched.signal.throwIfAborted();
+      if (jar)
+        await withRequestSignal(dispatched.signal, () =>
+          captureCookies(jar, response, dispatched.url, dispatched.signal),
+        );
+      dispatched.signal.throwIfAborted();
+    } catch (error) {
+      discardResponseBody(response);
+      throw error;
+    }
     if (!redirectStatuses.has(response.status) || request.redirect === "manual") return response;
     if (request.redirect === "error") {
       discardResponseBody(response);
@@ -103,10 +120,10 @@ async function run(
  * Create a {@link TestClient} bound to a target for repeated request injection.
  *
  * The returned client applies shared defaults (base URL, headers, cookie jar,
- * redirect behavior) to every request made through it, and follows redirects
- * automatically unless `redirect` is overridden.
+ * redirect behavior) to every request made through it. Redirects are manual
+ * unless `redirect: "follow"` is supplied.
  *
- * @param target - The handler or {@link RequestTarget} to inject requests into.
+ * @param target - The {@link Injectable} handler or fetch-compatible object.
  * @param options - Default options applied to every request made by this client.
  * @returns A {@link TestClient} with `request`, `get`, `post`, and other HTTP-method helpers.
  * @example
@@ -114,8 +131,13 @@ async function run(
  * const response = await client.get("/users");
  */
 export function createTestClient(target: Injectable, options: TestClientOptions = {}): TestClient {
+  const maxRedirects = redirectLimit(options.maxRedirects);
   const jar = options.cookies === true ? createTestCookieJar() : options.cookies;
   const request = (path: string | URL, requestOptions: InjectOptions = {}) => {
+    const limit =
+      requestOptions.maxRedirects === undefined
+        ? maxRedirects
+        : redirectLimit(requestOptions.maxRedirects);
     const headers = new Headers(options.headers);
     new Headers(requestOptions.headers).forEach((value, name) => headers.set(name, value));
     const built = createTestRequest(path, {
@@ -124,7 +146,7 @@ export function createTestClient(target: Injectable, options: TestClientOptions 
       headers,
       redirect: requestOptions.redirect ?? options.redirect ?? "manual",
     } as InjectOptions);
-    return run(target, built, jar, requestOptions.maxRedirects ?? options.maxRedirects ?? 10);
+    return run(target, built, jar, limit);
   };
   const method =
     (name: string) =>
@@ -147,8 +169,8 @@ export function createTestClient(target: Injectable, options: TestClientOptions 
  * Inject a single request into a target and return the resulting response,
  * following redirects up to `maxRedirects` hops.
  *
- * @param target - The handler or {@link RequestTarget} to inject the request into.
- * @param request - An existing `Request` to dispatch as-is.
+ * @param target - The {@link Injectable} handler or fetch-compatible object.
+ * @param request - An unconsumed `Request`; each dispatch receives a clone.
  * @param options - Only `maxRedirects` is honored when a `Request` is passed directly.
  * @returns The final `Response` after any redirects have been followed.
  */
@@ -161,7 +183,7 @@ export function inject(
  * Inject a request built from a path/URL and options into a target and return
  * the resulting response, following redirects up to `maxRedirects` hops.
  *
- * @param target - The handler or {@link RequestTarget} to inject the request into.
+ * @param target - The {@link Injectable} handler or fetch-compatible object.
  * @param input - The request path or URL, resolved against `options.baseUrl`.
  * @param options - Request options such as method, headers, query, and body.
  * @returns The final `Response` after any redirects have been followed.
@@ -178,6 +200,7 @@ export function inject(
   input: Request | string | URL,
   options: InjectOptions = {},
 ): Promise<Response> {
+  const maxRedirects = redirectLimit(options.maxRedirects);
   if (input instanceof Request && input.bodyUsed) {
     throw new TypeError(
       "@askrjs/testing cannot inject a Request whose body has already been consumed; construct a new Request before calling inject().",
@@ -190,5 +213,5 @@ export function inject(
           ...options,
           redirect: options.redirect ?? "manual",
         } as InjectOptions);
-  return run(target, request, undefined, options.maxRedirects ?? 10);
+  return run(target, request, undefined, maxRedirects);
 }

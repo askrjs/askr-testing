@@ -34,6 +34,7 @@ type RequestOptionsBase = Omit<RequestInit, "body" | "headers" | "method"> & {
   baseUrl?: string | URL;
   headers?: HeadersInit;
   query?: Query;
+  /** Non-negative safe integer; defaults to 10. */
   maxRedirects?: number;
 };
 
@@ -86,5 +87,6 @@ export interface TestClientOptions {
   /** Enable an automatically managed cookie jar (`true`), or supply an existing {@link TestCookieJar}. */
   cookies?: true | TestCookieJar;
   redirect?: RequestRedirect;
+  /** Non-negative safe integer; defaults to 10. */
   maxRedirects?: number;
 }

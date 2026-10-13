@@ -1,0 +1,34 @@
+{
+  "exportKeys": [".", "./package.json"],
+  "values": ["createTestClient", "createTestCookieJar", "inject"],
+  "types": [
+    "Form",
+    "InjectOptions",
+    "Injectable",
+    "Query",
+    "TestClient",
+    "TestClientOptions",
+    "TestCookie",
+    "TestCookieJar"
+  ],
+  "removed": [
+    "BodyRequestOptions",
+    "FormValue",
+    "GetHeadOptions",
+    "QueryValue",
+    "RequestHandler",
+    "RequestTarget",
+    "createTestRequest"
+  ],
+  "privateSubpaths": [
+    "client",
+    "cookies",
+    "request",
+    "types",
+    "request-signal",
+    "response-body",
+    "src/request",
+    "dist/index.js",
+    "dist/index.d.ts"
+  ]
+}
