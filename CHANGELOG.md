@@ -24,5 +24,5 @@
 - Expand deterministic overlap, cookie ordering, abort/cleanup and stream-body coverage. Keep existing
   coverage thresholds and refresh compatible development dependencies.
 
-The package remains 0.4.1 during coordinated 0.5.0 preparation. Official publication awaits the final
-candidate graph and maintainer review.
+The 0.5.0 changes are prepared for coordinated release. Tag creation and npm
+publication run through the main-branch package workflow.
