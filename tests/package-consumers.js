@@ -23,14 +23,7 @@ try {
     JSON.stringify({ private: true, type: "module" }),
   );
   npm(
-    [
-      "install",
-      "--ignore-scripts",
-      "--no-audit",
-      "--no-fund",
-      "--no-package-lock",
-      join(directory, packed.filename),
-    ],
+    ["install", "--no-audit", "--no-fund", "--no-package-lock", join(directory, packed.filename)],
     { cwd: directory, stdio: "pipe" },
   );
   const manifest = JSON.parse(
