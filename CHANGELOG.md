@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-10-13
+
 ### Breaking
 
 - Reduce the root API from 18 to 11 declaration names. Remove `createTestRequest`, `BodyRequestOptions`,
