@@ -28,3 +28,8 @@
 
 The 0.5.0 changes are prepared for coordinated release. Tag creation and npm
 publication run through the main-branch package workflow.
+
+### Development
+
+- Keep unit and coverage runs on the pinned Vitest and matching coverage provider;
+  Vite+ continues to handle formatting, linting, and packing.

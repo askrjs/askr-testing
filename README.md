@@ -139,5 +139,5 @@ Use `inject(target, path, options)` for query/JSON/form construction, or pass a 
 need to retain one. The separate `createTestRequest` constructor is private. Supporting option and
 handler types are consolidated; see the [complete API decisions and migration](docs/0.5.0-api.md).
 The [executed hardening matrix](docs/0.5.0-hardening.md) distinguishes local injection, browser tests,
-and real transport qualification. These documents describe preparation for 0.5; package versions stay
-at 0.4.x until the coordinated candidate is reviewed.
+and real transport qualification. This source candidate declares version 0.5.0. Official publication
+awaits coordinated candidate review and release approval.
