@@ -47,8 +47,8 @@
     "lint": "vp lint src tests vite.config.ts vitest.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run test:unit",
-    "test:unit": "vp test run -c vitest.config.ts",
-    "test:coverage": "vp test run -c vitest.config.ts --coverage",
+    "test:unit": "vitest run -c vitest.config.ts",
+    "test:coverage": "vitest run -c vitest.config.ts --coverage",
     "test:types": "npm run build && tsc -p tests/types/tsconfig.json",
     "test:publint": "publint",
     "pack:check": "node tests/package-artifacts.js",
@@ -61,12 +61,12 @@
     "tough-cookie": "^6.0.2"
   },
   "devDependencies": {
-    "@askrjs/server": ">=0.5.0 <0.6.0",
+    "@askrjs/server": ">=0.4.0 <0.5.0",
     "@typescript/typescript6": "npm:typescript@6.0.2",
     "@vitest/coverage-v8": "4.1.11",
     "publint": "^0.3.24",
     "typescript": "7.0.2",
-    "vite-plus": "^0.3.1",
+    "vite-plus": "^1.1.0",
     "vitest": "^4.1.11"
   },
   "engines": {
