@@ -1,7 +1,7 @@
 import { createServerApp } from "@askrjs/server";
 import { createRouter } from "@askrjs/server/router";
 import { json } from "@askrjs/server/http";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { createTestClient, createTestCookieJar, inject, type Injectable } from "../src/index";
 import { createTestRequest } from "../src/request";
 

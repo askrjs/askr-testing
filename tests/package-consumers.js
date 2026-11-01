@@ -136,7 +136,7 @@ try {
       declarationNames: symbols.length,
       removedNames: contract.removed.length,
       privateSubpaths: contract.privateSubpaths.length,
-      compilers: ["6.0.2", "7.0.2"],
+      compilers: ["6.0.3", "7.0.2"],
       runtime: [
         "redirect session",
         "jar clear",
