@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import ts from "@typescript/typescript6";
+import ts from "typescript";
 
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
@@ -60,7 +60,7 @@ try {
   );
   execFileSync(
     process.execPath,
-    [join(root, "node_modules/typescript/bin/tsc"), "-p", "tsconfig.json"],
+    [join(root, "node_modules/@typescript/native/bin/tsc"), "-p", "tsconfig.json"],
     { cwd: directory, stdio: "pipe" },
   );
   const program = ts.createProgram([fixture], {
