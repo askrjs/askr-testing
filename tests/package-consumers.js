@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 
 const npmCli = process.env.npm_execpath;
 if (!npmCli) throw new Error("npm_execpath is unavailable; run this check through npm");
@@ -23,14 +23,7 @@ try {
     JSON.stringify({ private: true, type: "module" }),
   );
   npm(
-    [
-      "install",
-      "--ignore-scripts",
-      "--no-audit",
-      "--no-fund",
-      "--no-package-lock",
-      join(directory, packed.filename),
-    ],
+    ["install", "--no-audit", "--no-fund", "--no-package-lock", join(directory, packed.filename)],
     { cwd: directory, stdio: "pipe" },
   );
   const manifest = JSON.parse(
@@ -60,7 +53,7 @@ try {
   );
   execFileSync(
     process.execPath,
-    [join(root, "node_modules/@typescript/native/bin/tsc"), "-p", "tsconfig.json"],
+    [join(root, "node_modules/typescript/bin/tsc"), "-p", "tsconfig.json"],
     { cwd: directory, stdio: "pipe" },
   );
   const program = ts.createProgram([fixture], {
@@ -136,7 +129,7 @@ try {
       declarationNames: symbols.length,
       removedNames: contract.removed.length,
       privateSubpaths: contract.privateSubpaths.length,
-      compilers: ["6.0.3", "7.0.2"],
+      compilers: ["6.0.2", "7.0.2"],
       runtime: [
         "redirect session",
         "jar clear",
